@@ -115,7 +115,12 @@
 
                 for (const rawItem of data) {
                     const item = normalizeData(rawItem);
+                    
+                    // Пропускаем ТС без координат
                     if (item.lat == null || item.lon == null) continue;
+                    
+                    // Пропускаем ТС без номера маршрута (служебные автомобили, резерв)
+                    if (!item.route_code || item.route_code.trim() === '') continue;
                     
                     const id = item.vehicle_id;
                     seenIds.add(id);
