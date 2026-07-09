@@ -9,6 +9,11 @@
     <style>
         html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 0; }
+
+        /* Скрываем attribution Leaflet и OpenStreetMap */
+        .leaflet-control-attribution {
+            display: none !important;
+        }
         
         .header {
             position: absolute; top: 0; left: 0; right: 0; z-index: 1000;
@@ -55,11 +60,16 @@
         const UPDATE_INTERVAL = 10000;
         const LESOZAVODSK_CENTER = [45.4556, 133.4056];
 
-        const map = L.map('map', { center: LESOZAVODSK_CENTER, zoom: 13, zoomControl: false });
+        const map = L.map('map', {
+            center: LESOZAVODSK_CENTER,
+            zoom: 13,
+            zoomControl: false,
+            attributionControl: false  // отключаем attribution на уровне инициализации карты
+        });
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap', maxZoom: 19
+            maxZoom: 19
         }).addTo(map);
 
         const vehicles = new Map();
@@ -116,10 +126,7 @@
                 for (const rawItem of data) {
                     const item = normalizeData(rawItem);
                     
-                    // Пропускаем ТС без координат
                     if (item.lat == null || item.lon == null) continue;
-                    
-                    // Пропускаем ТС без номера маршрута (служебные автомобили, резерв)
                     if (!item.route_code || item.route_code.trim() === '') continue;
                     
                     const id = item.vehicle_id;
