@@ -10,10 +10,7 @@
         html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 0; }
 
-        /* Скрываем attribution Leaflet и OpenStreetMap */
-        .leaflet-control-attribution {
-            display: none !important;
-        }
+        .leaflet-control-attribution { display: none !important; }
         
         .header {
             position: absolute; top: 0; left: 0; right: 0; z-index: 1000;
@@ -24,6 +21,7 @@
         .header h1 { margin: 0; font-size: 15px; font-weight: 600; }
         .header .status { font-size: 12px; color: #666; }
         
+        /* Стили для маркера автобуса */
         .bus-marker { display: flex; flex-direction: column; align-items: center; pointer-events: auto; }
         .bus-label {
             background: rgba(255, 255, 255, 0.95); border: 1px solid #1976d2; border-radius: 6px;
@@ -34,11 +32,18 @@
         .bus-label .route-code { display: block; font-size: 12px; color: #1976d2; font-weight: bold; }
         .bus-label .route-name { display: block; font-size: 9px; color: #555; font-weight: 500; }
         .bus-label .fleet { display: block; font-size: 9px; color: #333; font-weight: 500; }
-        
         .bus-arrow {
             width: 24px; height: 24px;
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
             transition: transform 1.5s linear;
+        }
+
+        /* Стили для маркера остановки */
+        .stop-marker { background: transparent !important; border: none !important; }
+        .stop-icon {
+            background: #fff; border: 2px solid #1976d2; border-radius: 50%;
+            width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -56,25 +61,87 @@
             if (window.WebApp.expandViewport) window.WebApp.expandViewport();
         }
 
-        const API_URL = 'https://диспетчер-автобусов.рф/api/public/vehicles';
+        const API_BASE = 'https://диспетчер-автобусов.рф/api/public';
         const UPDATE_INTERVAL = 5000;
         const LESOZAVODSK_CENTER = [45.4556, 133.4056];
 
-        const map = L.map('map', {
-            center: LESOZAVODSK_CENTER,
-            zoom: 13,
-            zoomControl: false,
-            attributionControl: false  // отключаем attribution на уровне инициализации карты
-        });
+        const map = L.map('map', { center: LESOZAVODSK_CENTER, zoom: 13, zoomControl: false, attributionControl: false });
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const vehicles = new Map();
         const statusEl = document.getElementById('status');
 
+        // =========================================================
+        // 1. ЗАГРУЗКА И ОТРИСОВКА ШЕЙПОВ МАРШРУТОВ (ЛИНИЙ)
+        // =========================================================
+        async function loadRoutesAndShapes() {
+            try {
+                const routes = await fetch(`${API_BASE}/routes`).then(r => r.json());
+                for (const route of routes) {
+                    if (!route.code) continue;
+                    try {
+                        // Загружаем шейпы в формате GeoJSON (он работает, в отличие от points)
+                        const shapes = await fetch(`${API_BASE}/routes/${route.id}/shape?format=geojson`).then(r => r.json());
+                        
+                        shapes.forEach(shapeItem => {
+                            if (shapeItem.geojson && shapeItem.geojson.type === 'LineString') {
+                                // Leaflet сам корректно парсит GeoJSON (координаты [lon, lat])
+                                L.geoJSON(shapeItem.geojson, {
+                                    style: {
+                                        color: getRouteColor(route.code),
+                                        weight: 4,
+                                        opacity: 0.6
+                                    }
+                                }).addTo(map);
+                            }
+                        });
+                    } catch (e) {
+                        console.warn(`Не удалось загрузить шейп для маршрута ${route.code}`, e);
+                    }
+                }
+            } catch (e) {
+                console.error("Ошибка загрузки маршрутов", e);
+            }
+        }
+
+        // Генерация стабильного цвета для маршрута на основе его номера
+        function getRouteColor(code) {
+            let hash = 0;
+            for (let i = 0; i < code.length; i++) {
+                hash = code.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            // Делаем цвет поярче
+            let color = '#' + ('000000' + (hash & 0xFFFFFF).toString(16)).slice(-6);
+            return color;
+        }
+
+        // =========================================================
+        // 2. ЗАГРУЗКА И ОТРИСОВКА ОСТАНОВОК (из локального stops.json)
+        // =========================================================
+        async function loadStops() {
+            try {
+                // Пытаемся загрузить файл stops.json из корня вашего репозитория на GitHub
+                const stops = await fetch('stops.json').then(r => r.json());
+                stops.forEach(stop => {
+                    L.marker([stop.lat, stop.lon], {
+                        icon: L.divIcon({
+                            className: 'stop-marker',
+                            html: '<div class="stop-icon">🚏</div>',
+                            iconSize: [22, 22],
+                            iconAnchor: [11, 11]
+                        })
+                    }).bindPopup(`<b>Остановка:</b><br>${stop.name}`).addTo(map);
+                });
+            } catch (e) {
+                console.log("stops.json не найден в репозитории, пропускаем отрисовку остановок.");
+            }
+        }
+
+        // =========================================================
+        // 3. ОТСЛЕЖИВАНИЕ АВТОБУСОВ (СТРЕЛОЧКИ)
+        // =========================================================
         function normalizeData(obj) {
             if (!obj || typeof obj !== 'object') return obj;
             const normalized = {};
@@ -117,7 +184,7 @@
 
         async function updateVehicles() {
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch(`${API_BASE}/vehicles`);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
                 
@@ -125,9 +192,8 @@
 
                 for (const rawItem of data) {
                     const item = normalizeData(rawItem);
-                    
                     if (item.lat == null || item.lon == null) continue;
-                    if (!item.route_code || item.route_code.trim() === '') continue;
+                    if (!item.route_code || item.route_code.trim() === '') continue; // Скрываем служебные
                     
                     const id = item.vehicle_id;
                     seenIds.add(id);
@@ -158,8 +224,13 @@
             }
         }
 
-        updateVehicles();
-        setInterval(updateVehicles, UPDATE_INTERVAL);
+        // =========================================================
+        // ЗАПУСК
+        // =========================================================
+        loadRoutesAndShapes(); // Рисуем линии маршрутов
+        loadStops();           // Рисуем остановки (если есть stops.json)
+        updateVehicles();      // Рисуем автобусы
+        setInterval(updateVehicles, UPDATE_INTERVAL); // Обновляем автобусы каждые 5 сек
     </script>
 </body>
 </html>
