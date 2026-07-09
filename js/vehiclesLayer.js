@@ -59,9 +59,6 @@ export default class VehiclesLayer {
         });
     }
 
-        });
-    }
-
     async updateVehicles() {
         try {
             const response = await fetch(`${this.apiBase}/vehicles`);
