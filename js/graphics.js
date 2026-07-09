@@ -32,12 +32,131 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, Bl
     transition: transform 1.5s linear;
 }
 
-/* Стили для маркера остановки */
-.stop-marker { background: transparent !important; border: none !important; }
-.stop-icon {
-    background: #fff; border: 2px solid #1976d2; border-radius: 50%;
-    width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
-    font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+/* Кнопка маршрутов в стиле Leaflet */
+.routes-button {
+    background-color: white;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
+    transition: background-color 0.2s;
+}
+.routes-button:hover {
+    background-color: #f4f4f4;
+}
+.routes-button:active {
+    border-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Модальное окно маршрутов */
+.routes-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.routes-modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    height: 85%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+}
+
+.routes-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0;
+}
+
+.routes-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.routes-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.routes-modal-close:hover {
+    color: #000;
+}
+
+.routes-modal-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.routes-modal-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.routes-modal-item:hover {
+    background-color: #f9f9f9;
+}
+
+.routes-modal-item:active {
+    background-color: #f0f0f0;
+}
+
+.routes-modal-hide-all {
+    font-weight: 600;
+    background-color: #f5f5f5;
+}
+
+.routes-modal-hide-all:hover {
+    background-color: #efefef;
+}
+
+.routes-modal-code {
+    font-weight: 600;
+    color: #1976d2;
+    min-width: 50px;
+}
+
+.routes-modal-name {
+    color: #555;
+    font-size: 14px;
+    flex: 1;
 }
 `;
     const style = document.createElement('style');
@@ -55,3 +174,4 @@ export function createHeader() {
     `;
     return header;
 }
+

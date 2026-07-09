@@ -16,18 +16,20 @@ if (window.WebApp) {
 }
 
 // Инициализация
-injectStyles();
-const baseMap = new BaseMap('map', LESOZAVODSK_CENTER, 13);
-const map = baseMap.getMap();
+(async () => {
+    injectStyles();
+    const baseMap = new BaseMap('map', LESOZAVODSK_CENTER, 13);
+    const map = baseMap.getMap();
 
-const ui = new UILayer(map);
-map.invalidateSize();
+    const shapes = new ShapesLayer(map, API_BASE);
+    await shapes.init();
 
-const shapes = new ShapesLayer(map, API_BASE);
-shapes.init();
+    const ui = new UILayer(map, shapes);
+    map.invalidateSize();
 
-const vehicles = new VehiclesLayer(map, API_BASE, ui, UPDATE_INTERVAL);
-vehicles.start();
+    const vehicles = new VehiclesLayer(map, API_BASE, ui, UPDATE_INTERVAL);
+    vehicles.start();
 
-// Экспортируем для отладки
-window._LesoApp = { map, ui, shapes, vehicles };
+    // Экспортируем для отладки
+    window._LesoApp = { map, ui, shapes, vehicles };
+})();
