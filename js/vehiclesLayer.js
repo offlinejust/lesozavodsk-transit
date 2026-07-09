@@ -28,14 +28,22 @@ export default class VehiclesLayer {
         const routeName = d.route_name || '';
         const course = d.course_deg || 0;
 
+        // Обрезаем длинные названия маршрутов
+        const displayName = routeName.substring(0, 16);
+
         // Полностью SVG-иконка: якорь в центре [60, 60]
         const svg = `
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+                <defs>
+                    <style>
+                        .bus-text { overflow: hidden; text-overflow: ellipsis; }
+                    </style>
+                </defs>
                 <!-- Метка маршрута (выше стрелочки) -->
-                <rect x="20" y="8" width="80" height="32" rx="4" fill="rgba(255, 255, 255, 0.95)" stroke="#1976d2" stroke-width="1" filter="drop-shadow(0 1px 3px rgba(0,0,0,0.2))"/>
-                <text x="60" y="20" font-size="11" font-weight="600" fill="#0d47a1" text-anchor="middle" font-family="Arial,sans-serif">№ ${routeCode}</text>
-                <text x="60" y="32" font-size="8" font-weight="500" fill="#555" text-anchor="middle" font-family="Arial,sans-serif">${routeName}</text>
-                <text x="60" y="42" font-size="8" font-weight="500" fill="#333" text-anchor="middle" font-family="Arial,sans-serif">${fleet}</text>
+                <rect x="15" y="6" width="90" height="36" rx="3" fill="rgba(255, 255, 255, 0.95)" stroke="#1976d2" stroke-width="0.8" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.15))"/>
+                <text x="60" y="17" font-size="10" font-weight="700" fill="#0d47a1" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">№ ${routeCode}</text>
+                <text x="60" y="28" font-size="7" font-weight="500" fill="#555" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">${displayName}</text>
+                <text x="60" y="38" font-size="7" font-weight="500" fill="#333" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">${fleet}</text>
                 <!-- Стрелочка (центрирована на якоре [60, 60]) с правильным вращением -->
                 <g transform="translate(60, 60) rotate(${course}) translate(-60, -60)">
                     <path d="M 60 48 L 68 72 L 60 66 L 52 72 Z" fill="#1976d2" stroke="#fff" stroke-width="1.5" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"/>
@@ -48,6 +56,9 @@ export default class VehiclesLayer {
             html: svg,
             iconSize: [120, 120],
             iconAnchor: [60, 60]
+        });
+    }
+
         });
     }
 
