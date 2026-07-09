@@ -45,7 +45,7 @@ export default class VehiclesLayer {
             className: 'bus-marker',
             html: label + arrowSvg,
             iconSize: [120, 80],
-            iconAnchor: [60, 70]
+            iconAnchor: [60, 40]
         });
     }
 
