@@ -2,10 +2,11 @@ export default class VehiclesLayer {
     constructor(map, apiBase, ui = null, updateInterval = 5000) {
         this.map = map;
         this.apiBase = apiBase;
-        this.ui = ui; // ui может быть экземпляром UILayer для обновления статуса
+        this.ui = ui;
         this.vehicles = new Map();
         this._interval = null;
         this.updateInterval = updateInterval;
+        this.filteredRouteCode = null; // Текущий отфильтрованный маршрут
     }
 
     normalizeData(obj) {
@@ -64,13 +65,24 @@ export default class VehiclesLayer {
                 const id = item.vehicle_id;
                 seenIds.add(id);
 
+                // Если установлен фильтр маршрута, показываем только автобусы этого маршрута
+                const shouldShow = !this.filteredRouteCode || item.route_code === this.filteredRouteCode;
+
                 if (this.vehicles.has(id)) {
                     const entry = this.vehicles.get(id);
                     entry.marker.setLatLng([item.lat, item.lon]);
                     entry.marker.setIcon(this.createBusIcon(item));
+                    entry.data = item;
+                    
+                    if (shouldShow) {
+                        if (!this.map.hasLayer(entry.marker)) this.map.addLayer(entry.marker);
+                    } else {
+                        if (this.map.hasLayer(entry.marker)) this.map.removeLayer(entry.marker);
+                    }
                 } else {
-                    const marker = L.marker([item.lat, item.lon], { icon: this.createBusIcon(item) }).addTo(this.map);
-                    this.vehicles.set(id, { marker });
+                    const marker = L.marker([item.lat, item.lon], { icon: this.createBusIcon(item) });
+                    if (shouldShow) marker.addTo(this.map);
+                    this.vehicles.set(id, { marker, data: item });
                 }
             }
 
@@ -87,6 +99,50 @@ export default class VehiclesLayer {
             console.error(e);
             if (this.ui && typeof this.ui.setStatus === 'function') this.ui.setStatus('ошибка загрузки');
         }
+    }
+
+    // Фильтровать по маршруту по коду маршрута
+    filterByRouteCode(routeCode) {
+        this.filteredRouteCode = routeCode;
+        this.updateVehiclesVisibility();
+    }
+
+    // Показать все автобусы (убрать фильтр)
+    showAllVehicles() {
+        this.filteredRouteCode = null;
+        this.updateVehiclesVisibility();
+    }
+
+    // Обновить видимость автобусов в соответствии с текущим фильтром
+    updateVehiclesVisibility() {
+        for (const [id, entry] of this.vehicles) {
+            const shouldShow = !this.filteredRouteCode || entry.data.route_code === this.filteredRouteCode;
+            if (shouldShow) {
+                if (!this.map.hasLayer(entry.marker)) this.map.addLayer(entry.marker);
+            } else {
+                if (this.map.hasLayer(entry.marker)) this.map.removeLayer(entry.marker);
+            }
+        }
+    }
+
+    // Получить список уникальных маршрутов из текущих автобусов, отсортированный
+    getUniqueRoutesFromVehicles() {
+        const routes = new Map(); // routeCode -> { code, name, fleetCount }
+        for (const [, entry] of this.vehicles) {
+            const { route_code, route_name } = entry.data;
+            if (!route_code) continue;
+            if (!routes.has(route_code)) {
+                routes.set(route_code, { code: route_code, name: route_name || '', vehicles: [] });
+            }
+            routes.get(route_code).vehicles.push(entry.data);
+        }
+
+        // Сортируем по числовому коду
+        return Array.from(routes.values()).sort((a, b) => {
+            const numA = parseInt(a.code) || Infinity;
+            const numB = parseInt(b.code) || Infinity;
+            return numA - numB;
+        });
     }
 
     start() {

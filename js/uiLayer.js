@@ -2,9 +2,10 @@ import { injectStyles, createHeader } from './graphics.js';
 import RoutesModal from './routesModal.js';
 
 export default class UILayer {
-    constructor(map, shapesLayer = null) {
+    constructor(map, shapesLayer = null, vehiclesLayer = null) {
         this.map = map;
         this.shapesLayer = shapesLayer;
+        this.vehiclesLayer = vehiclesLayer;
         injectStyles();
         this.header = createHeader();
         document.body.appendChild(this.header);
@@ -13,15 +14,39 @@ export default class UILayer {
         // Добавляем кнопки зума
         L.control.zoom({ position: 'bottomright' }).addTo(this.map);
         
-        // Добавляем кнопку маршрутов
-        if (shapesLayer) {
-            this.routesModal = new RoutesModal(shapesLayer);
+        // Добавляем контрольные кнопки (скрыть маршруты + маршруты)
+        if (shapesLayer && vehiclesLayer) {
+            this.routesModal = new RoutesModal(shapesLayer, vehiclesLayer);
+            this.addHideRoutesButton();
             this.addRoutesButton();
         }
     }
 
+    addHideRoutesButton() {
+        const HideRoutesControl = L.Control.extend({
+            options: {
+                position: 'bottomright'
+            },
+            onAdd: (map) => {
+                const container = L.DomUtil.create('div', 'leaflet-bar');
+                const button = L.DomUtil.create('button', 'routes-button', container);
+                button.textContent = '✕';
+                button.title = 'Скрыть маршруты';
+                
+                L.DomEvent.on(button, 'click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    this.shapesLayer.hideAll();
+                    this.vehiclesLayer.showAllVehicles();
+                });
+                
+                return container;
+            }
+        });
+        
+        new HideRoutesControl().addTo(this.map);
+    }
+
     addRoutesButton() {
-        // Создаём кастомный контрол для кнопки маршрутов
         const RoutesControl = L.Control.extend({
             options: {
                 position: 'bottomright'

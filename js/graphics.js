@@ -72,11 +72,20 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, Bl
     background: white;
     border-radius: 8px;
     width: 90%;
-    height: 85%;
+    height: 90%;
     max-width: 500px;
     display: flex;
     flex-direction: column;
     box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 600px) {
+    .routes-modal-content {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        max-width: none;
+    }
 }
 
 .routes-modal-header {
@@ -157,6 +166,13 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, Bl
     color: #555;
     font-size: 14px;
     flex: 1;
+}
+
+.routes-modal-count {
+    color: #999;
+    font-size: 12px;
+    min-width: 30px;
+    text-align: right;
 }
 `;
     const style = document.createElement('style');

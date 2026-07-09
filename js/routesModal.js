@@ -1,13 +1,14 @@
 export default class RoutesModal {
-    constructor(shapesLayer) {
+    constructor(shapesLayer, vehiclesLayer) {
         this.shapesLayer = shapesLayer;
+        this.vehiclesLayer = vehiclesLayer;
         this.modal = null;
     }
 
     open() {
-        if (this.modal) return; // Модал уже открыт
+        if (this.modal) return;
         
-        const routes = this.shapesLayer.getSortedRoutes();
+        const routes = this.vehiclesLayer.getUniqueRoutesFromVehicles();
         
         this.modal = document.createElement('div');
         this.modal.className = 'routes-modal';
@@ -22,9 +23,10 @@ export default class RoutesModal {
                         <span>Скрыть все маршруты</span>
                     </li>
                     ${routes.map(route => `
-                        <li class="routes-modal-item" data-route-id="${route.id}">
+                        <li class="routes-modal-item" data-route-code="${route.code}">
                             <span class="routes-modal-code">№ ${route.code}</span>
                             <span class="routes-modal-name">${route.name}</span>
+                            <span class="routes-modal-count">${route.vehicles.length}</span>
                         </li>
                     `).join('')}
                 </ul>
@@ -33,23 +35,30 @@ export default class RoutesModal {
         
         document.body.appendChild(this.modal);
         
-        // Обработчик закрытия
         this.modal.querySelector('.routes-modal-close').addEventListener('click', () => this.close());
         this.modal.addEventListener('click', (e) => {
             if (e.target === this.modal) this.close();
         });
         
-        // Обработчик "Скрыть все маршруты"
         this.modal.querySelector('.routes-modal-hide-all').addEventListener('click', () => {
             this.shapesLayer.hideAll();
+            this.vehiclesLayer.showAllVehicles();
             this.close();
         });
         
-        // Обработчики клика на маршруты
-        this.modal.querySelectorAll('.routes-modal-item[data-route-id]').forEach(item => {
+        this.modal.querySelectorAll('.routes-modal-item[data-route-code]').forEach(item => {
             item.addEventListener('click', () => {
-                const routeId = parseInt(item.dataset.routeId);
-                this.shapesLayer.showRoute(routeId);
+                const routeCode = item.dataset.routeCode;
+                const route = routes.find(r => r.code === routeCode);
+                if (route) {
+                    // Показать шейп маршрута (по коду маршрута ищем в shapesLayer)
+                    const routeInShapes = this.shapesLayer.routes.find(r => r.code === routeCode);
+                    if (routeInShapes) {
+                        this.shapesLayer.showRoute(routeInShapes.id);
+                    }
+                    // Показать только автобусы этого маршрута
+                    this.vehiclesLayer.filterByRouteCode(routeCode);
+                }
                 this.close();
             });
         });

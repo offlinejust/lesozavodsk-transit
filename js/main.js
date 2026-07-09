@@ -24,10 +24,15 @@ if (window.WebApp) {
     const shapes = new ShapesLayer(map, API_BASE);
     await shapes.init();
 
-    const ui = new UILayer(map, shapes);
+    // Первый запрос данных, чтобы UILayer мог показать маршруты из активных автобусов
+    const vehiclesInit = new VehiclesLayer(map, API_BASE, null, UPDATE_INTERVAL);
+    await vehiclesInit.updateVehicles();
+
+    const ui = new UILayer(map, shapes, vehiclesInit);
     map.invalidateSize();
 
-    const vehicles = new VehiclesLayer(map, API_BASE, ui, UPDATE_INTERVAL);
+    const vehicles = vehiclesInit; // Используем уже инициализированный VehiclesLayer
+    vehicles.ui = ui; // Обновляем ссылку на UI
     vehicles.start();
 
     // Экспортируем для отладки
