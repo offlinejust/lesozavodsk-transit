@@ -15,22 +15,8 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, Bl
 .header h1 { margin: 0; font-size: 15px; font-weight: 600; }
 .header .status { font-size: 12px; color: #666; }
 
-/* Стили для маркера автобуса */
-.bus-marker { display: flex; flex-direction: column; align-items: center; pointer-events: auto; }
-.bus-label {
-    background: rgba(255, 255, 255, 0.95); border: 1px solid #1976d2; border-radius: 6px;
-    padding: 3px 6px; font-size: 10px; font-weight: 600; color: #0d47a1;
-    margin-bottom: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    text-align: center; line-height: 1.2; max-width: 140px; word-wrap: break-word;
-}
-.bus-label .route-code { display: block; font-size: 12px; color: #1976d2; font-weight: bold; }
-.bus-label .route-name { display: block; font-size: 9px; color: #555; font-weight: 500; }
-.bus-label .fleet { display: block; font-size: 9px; color: #333; font-weight: 500; }
-.bus-arrow {
-    width: 24px; height: 24px;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-    transition: transform 1.5s linear;
-}
+/* Стили для маркера автобуса (SVG) */
+.bus-marker-svg { display: flex; align-items: center; justify-content: center; pointer-events: auto; }
 
 /* Кнопка маршрутов в стиле Leaflet */
 .routes-button {
