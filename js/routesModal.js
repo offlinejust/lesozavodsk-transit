@@ -20,15 +20,18 @@ export default class RoutesModal {
                 </div>
                 <ul class="routes-modal-list">
                     <li class="routes-modal-item routes-modal-hide-all">
-                        <span>Скрыть все маршруты</span>
+                        <span>Показать все автобусы</span>
                     </li>
-                    ${routes.map(route => `
+                    ${routes.map(route => {
+                        const firstFleet = route.vehicles[0]?.fleet_number || '—';
+                        return `
                         <li class="routes-modal-item" data-route-code="${route.code}">
                             <span class="routes-modal-code">№ ${route.code}</span>
                             <span class="routes-modal-name">${route.name}</span>
-                            <span class="routes-modal-count">${route.vehicles.length}</span>
+                            <span class="routes-modal-fleet">${firstFleet}</span>
                         </li>
-                    `).join('')}
+                    `;
+                    }).join('')}
                 </ul>
             </div>
         `;

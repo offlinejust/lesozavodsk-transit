@@ -174,6 +174,22 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, Bl
     min-width: 30px;
     text-align: right;
 }
+
+.routes-modal-fleet {
+    color: #1976d2;
+    font-size: 12px;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* Стили для метки автопарка */
+.depot-marker { background: transparent !important; border: none !important; pointer-events: auto; }
+.depot-icon {
+    font-size: 28px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+
 `;
     const style = document.createElement('style');
     style.id = 'leso-styles';

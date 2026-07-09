@@ -31,7 +31,7 @@ export default class UILayer {
                 const container = L.DomUtil.create('div', 'leaflet-bar');
                 const button = L.DomUtil.create('button', 'routes-button', container);
                 button.textContent = '✕';
-                button.title = 'Скрыть маршруты';
+                button.title = 'Показать все автобусы';
                 
                 L.DomEvent.on(button, 'click', (e) => {
                     L.DomEvent.stopPropagation(e);
