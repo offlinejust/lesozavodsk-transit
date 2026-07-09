@@ -1,12 +1,14 @@
 export default class VehiclesLayer {
-    constructor(map, apiBase, ui = null, updateInterval = 5000) {
+    constructor(map, apiBase, ui = null, updateInterval = 5000, defaultViewCenter = null, defaultViewZoom = 13) {
         this.map = map;
         this.apiBase = apiBase;
         this.ui = ui;
         this.vehicles = new Map();
         this._interval = null;
         this.updateInterval = updateInterval;
-        this.filteredRouteCode = null; // Текущий отфильтрованный маршрут
+        this.filteredRouteCode = null;
+        this.defaultViewCenter = defaultViewCenter;
+        this.defaultViewZoom = defaultViewZoom;
     }
 
     normalizeData(obj) {
@@ -27,11 +29,15 @@ export default class VehiclesLayer {
         const routeCode = d.route_code || '?';
         const routeName = d.route_name || '';
         const course = d.course_deg || 0;
-
-        // Обрезаем длинные названия маршрутов
         const displayName = routeName.substring(0, 16);
 
-        // Полностью SVG-иконка: якорь в центре [90, 90]
+        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const panelFill = isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+        const panelStroke = isDark ? '#60a5fa' : '#1976d2';
+        const titleColor = isDark ? '#f8fafc' : '#0d47a1';
+        const detailColor = isDark ? '#cbd5e1' : '#555';
+        const detailColor2 = isDark ? '#e2e8f0' : '#333';
+
         const svg = `
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
                 <defs>
@@ -39,12 +45,10 @@ export default class VehiclesLayer {
                         .bus-text { overflow: hidden; text-overflow: ellipsis; }
                     </style>
                 </defs>
-                <!-- Метка маршрута (выше стрелочки) -->
-                <rect x="22" y="9" width="136" height="54" rx="4" fill="rgba(255, 255, 255, 0.95)" stroke="#1976d2" stroke-width="1.2" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.2))"/>
-                <text x="90" y="28" font-size="15" font-weight="700" fill="#0d47a1" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">№ ${routeCode}</text>
-                <text x="90" y="43" font-size="11" font-weight="500" fill="#555" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">${displayName}</text>
-                <text x="90" y="56" font-size="11" font-weight="500" fill="#333" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">${fleet}</text>
-                <!-- Стрелочка (центрирована на якоре [90, 90]) с правильным вращением -->
+                <rect x="22" y="9" width="136" height="54" rx="4" fill="${panelFill}" stroke="${panelStroke}" stroke-width="1.2" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.2))"/>
+                <text x="90" y="28" font-size="15" font-weight="700" fill="${titleColor}" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">№ ${routeCode}</text>
+                <text x="90" y="43" font-size="11" font-weight="500" fill="${detailColor}" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">${displayName}</text>
+                <text x="90" y="56" font-size="11" font-weight="500" fill="${detailColor2}" text-anchor="middle" font-family="Arial,sans-serif" class="bus-text">${fleet}</text>
                 <g transform="translate(90, 90) rotate(${course}) translate(-90, -90)">
                     <path d="M 90 72 L 102 108 L 90 99 L 78 108 Z" fill="#1976d2" stroke="#fff" stroke-width="2" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.5))"/>
                 </g>
@@ -75,7 +79,6 @@ export default class VehiclesLayer {
                 const id = item.vehicle_id;
                 seenIds.add(id);
 
-                // Если установлен фильтр маршрута, показываем только автобусы этого маршрута
                 const shouldShow = !this.filteredRouteCode || item.route_code === this.filteredRouteCode;
 
                 if (this.vehicles.has(id)) {
@@ -83,7 +86,7 @@ export default class VehiclesLayer {
                     entry.marker.setLatLng([item.lat, item.lon]);
                     entry.marker.setIcon(this.createBusIcon(item));
                     entry.data = item;
-                    
+
                     if (shouldShow) {
                         if (!this.map.hasLayer(entry.marker)) this.map.addLayer(entry.marker);
                     } else {
@@ -111,21 +114,21 @@ export default class VehiclesLayer {
         }
     }
 
-    // Фильтровать по маршруту по коду маршрута
     filterByRouteCode(routeCode) {
         this.filteredRouteCode = routeCode;
         this.updateVehiclesVisibility();
     }
 
-    // Показать все автобусы (убрать фильтр)
     showAllVehicles() {
         this.filteredRouteCode = null;
         this.updateVehiclesVisibility();
+        if (this.defaultViewCenter) {
+            this.map.setView(this.defaultViewCenter, this.defaultViewZoom);
+        }
     }
 
-    // Обновить видимость автобусов в соответствии с текущим фильтром
     updateVehiclesVisibility() {
-        for (const [id, entry] of this.vehicles) {
+        for (const [, entry] of this.vehicles) {
             const shouldShow = !this.filteredRouteCode || entry.data.route_code === this.filteredRouteCode;
             if (shouldShow) {
                 if (!this.map.hasLayer(entry.marker)) this.map.addLayer(entry.marker);
@@ -135,9 +138,8 @@ export default class VehiclesLayer {
         }
     }
 
-    // Получить список уникальных маршрутов из текущих автобусов, отсортированный
     getUniqueRoutesFromVehicles() {
-        const routes = new Map(); // routeCode -> { code, name, fleetCount }
+        const routes = new Map();
         for (const [, entry] of this.vehicles) {
             const { route_code, route_name } = entry.data;
             if (!route_code) continue;
@@ -147,12 +149,20 @@ export default class VehiclesLayer {
             routes.get(route_code).vehicles.push(entry.data);
         }
 
-        // Сортируем по числовому коду
         return Array.from(routes.values()).sort((a, b) => {
             const numA = parseInt(a.code) || Infinity;
             const numB = parseInt(b.code) || Infinity;
             return numA - numB;
         });
+    }
+
+    getFirstVehicleForRoute(routeCode) {
+        for (const [, entry] of this.vehicles) {
+            if (entry.data.route_code === routeCode && entry.data.lat != null && entry.data.lon != null) {
+                return [entry.data.lat, entry.data.lon];
+            }
+        }
+        return null;
     }
 
     start() {

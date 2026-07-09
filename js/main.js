@@ -25,7 +25,7 @@ if (window.WebApp) {
     await shapes.init();
 
     // Первый запрос данных, чтобы UILayer мог показать маршруты из активных автобусов
-    const vehiclesInit = new VehiclesLayer(map, API_BASE, null, UPDATE_INTERVAL);
+    const vehiclesInit = new VehiclesLayer(map, API_BASE, null, UPDATE_INTERVAL, LESOZAVODSK_CENTER, 13);
     await vehiclesInit.updateVehicles();
 
     const ui = new UILayer(map, shapes, vehiclesInit);

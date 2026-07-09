@@ -54,12 +54,11 @@ export default class RoutesModal {
                 const routeCode = item.dataset.routeCode;
                 const route = routes.find(r => r.code === routeCode);
                 if (route) {
-                    // Показать шейп маршрута (по коду маршрута ищем в shapesLayer)
                     const routeInShapes = this.shapesLayer.routes.find(r => r.code === routeCode);
+                    const focusLatLng = this.vehiclesLayer.getFirstVehicleForRoute(routeCode);
                     if (routeInShapes) {
-                        this.shapesLayer.showRoute(routeInShapes.id);
+                        this.shapesLayer.showRoute(routeInShapes.id, focusLatLng);
                     }
-                    // Показать только автобусы этого маршрута
                     this.vehiclesLayer.filterByRouteCode(routeCode);
                 }
                 this.close();
