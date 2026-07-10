@@ -2,7 +2,7 @@ import BaseMap from './baseMap.js';
 import ShapesLayer from './shapesLayer.js';
 import VehiclesLayer from './vehiclesLayer.js';
 import UILayer from './uiLayer.js';
-import { injectStyles } from './graphics.js';
+import { injectStyles, detectTheme, applyTheme } from './graphics.js';
 
 // Константы
 const API_BASE = 'https://диспетчер-автобусов.рф/api/public';
@@ -11,30 +11,36 @@ const UPDATE_INTERVAL = 5000;
 
 // Поддержка WebApp из MAX
 if (window.WebApp) {
-    window.WebApp.ready();
-    if (window.WebApp.expandViewport) window.WebApp.expandViewport();
+window.WebApp.ready();
+if (window.WebApp.expandViewport) window.WebApp.expandViewport();
 }
 
 // Инициализация
 (async () => {
-    injectStyles();
-    const baseMap = new BaseMap('map', LESOZAVODSK_CENTER, 13);
-    const map = baseMap.getMap();
+// 1. Инжектируем стили
+injectStyles();
 
-    const shapes = new ShapesLayer(map, API_BASE);
-    await shapes.init();
+// 2. Определяем и применяем тему ДО создания UI
+const theme = detectTheme();
+applyTheme(theme);
 
-    // Первый запрос данных, чтобы UILayer мог показать маршруты из активных автобусов
-    const vehiclesInit = new VehiclesLayer(map, API_BASE, null, UPDATE_INTERVAL, LESOZAVODSK_CENTER, 13);
-    await vehiclesInit.updateVehicles();
+const baseMap = new BaseMap('map', LESOZAVODSK_CENTER, 13);
+const map = baseMap.getMap();
 
-    const ui = new UILayer(map, shapes, vehiclesInit);
-    map.invalidateSize();
+const shapes = new ShapesLayer(map, API_BASE);
+await shapes.init();
 
-    const vehicles = vehiclesInit; // Используем уже инициализированный VehiclesLayer
-    vehicles.ui = ui; // Обновляем ссылку на UI
-    vehicles.start();
+// Первый запрос данных, чтобы UILayer мог показать маршруты из активных автобусов
+const vehiclesInit = new VehiclesLayer(map, API_BASE, null, UPDATE_INTERVAL, LESOZAVODSK_CENTER, 13);
+await vehiclesInit.updateVehicles();
 
-    // Экспортируем для отладки
-    window._LesoApp = { map, ui, shapes, vehicles };
+const ui = new UILayer(map, shapes, vehiclesInit);
+map.invalidateSize();
+
+const vehicles = vehiclesInit; // Используем уже инициализированный VehiclesLayer
+vehicles.ui = ui; // Обновляем ссылку на UI
+vehicles.start();
+
+// Экспортируем для отладки
+window._LesoApp = { map, ui, shapes, vehicles };
 })();

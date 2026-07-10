@@ -1,0 +1,10 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Собрать контекст-бандл
+Comment=Сборка кода репозитория в один txt-файл
+Exec=bash "/home/wl-0/lesozavodsk-transit/context-bundler/launch_bundle.sh"
+Icon=accessories-text-editor
+Terminal=false
+Categories=Utility;
