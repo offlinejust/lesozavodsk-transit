@@ -1,5 +1,5 @@
 export default class VehiclesLayer {
-    constructor(map, apiBase, ui = null, updateInterval = 5000, defaultViewCenter = null, defaultViewZoom = 13) {
+    constructor(map, apiBase, ui = null, updateInterval = 5000, defaultViewCenter = null, defaultViewZoom = 13, maskManager = null) {
         this.map = map;
         this.apiBase = apiBase;
         this.ui = ui;
@@ -9,6 +9,7 @@ export default class VehiclesLayer {
         this.filteredRouteCode = null;
         this.defaultViewCenter = defaultViewCenter;
         this.defaultViewZoom = defaultViewZoom;
+        this.maskManager = maskManager;
     }
 
     normalizeData(obj) {
@@ -62,35 +63,49 @@ export default class VehiclesLayer {
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
             const seenIds = new Set();
+
             for (const rawItem of data) {
                 const item = this.normalizeData(rawItem);
                 if (item.lat == null || item.lon == null) continue;
                 if (!item.route_code || item.route_code.trim() === '') continue;
-                const id = item.vehicle_id;
+
+                // Применяем маски к данным
+                const maskedItem = this.maskManager 
+                    ? this.maskManager.applyAllMasks(item) 
+                    : item;
+
+                const id = maskedItem.vehicle_id;
                 seenIds.add(id);
-                const shouldShow = !this.filteredRouteCode || item.route_code === this.filteredRouteCode;
+
+                const shouldShow = !this.filteredRouteCode || maskedItem.route_code === this.filteredRouteCode;
+
                 if (this.vehicles.has(id)) {
                     const entry = this.vehicles.get(id);
-                    entry.marker.setLatLng([item.lat, item.lon]);
-                    entry.marker.setIcon(this.createBusIcon(item));
-                    entry.data = item;
+                    entry.marker.setLatLng([maskedItem.lat, maskedItem.lon]);
+                    entry.marker.setIcon(this.createBusIcon(maskedItem));
+                    entry.data = maskedItem;
+
                     if (shouldShow) {
                         if (!this.map.hasLayer(entry.marker)) this.map.addLayer(entry.marker);
                     } else {
                         if (this.map.hasLayer(entry.marker)) this.map.removeLayer(entry.marker);
                     }
                 } else {
-                    const marker = L.marker([item.lat, item.lon], { icon: this.createBusIcon(item) });
+                    const marker = L.marker([maskedItem.lat, maskedItem.lon], { 
+                        icon: this.createBusIcon(maskedItem) 
+                    });
                     if (shouldShow) marker.addTo(this.map);
-                    this.vehicles.set(id, { marker, data: item });
+                    this.vehicles.set(id, { marker, data: maskedItem });
                 }
             }
+
             for (const [id, entry] of this.vehicles) {
                 if (!seenIds.has(id)) {
                     this.map.removeLayer(entry.marker);
                     this.vehicles.delete(id);
                 }
             }
+
             const statusText = `онлайн: ${this.vehicles.size} ТС`;
             if (this.ui && typeof this.ui.setStatus === 'function') this.ui.setStatus(statusText);
         } catch (e) {

@@ -1,0 +1,34 @@
+{
+  "masks": {
+    "fleet_number": [
+      {
+        "pattern": "^([А-ЯA-Za-z] \\d{3} [А-ЯA-Za-z]{2}).*",
+        "replacement": "$1"
+      }
+    ],
+    "direction_code": [
+      {
+        "pattern": "INBOUND",
+        "replacement": "Прямой"
+      },
+      {
+        "pattern": "OUTBOUND",
+        "replacement": "Обратный"
+      }
+    ],
+    "route_code": [
+      {
+        "pattern": "111",
+        "replacement": "1-111"
+      },
+      {
+        "pattern": "103",
+        "replacement": "10-103"
+      },
+      {
+        "pattern": "104",
+        "replacement": "11-104"
+      }
+    ]
+  }
+}
