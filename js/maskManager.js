@@ -10,10 +10,8 @@ export default class MaskManager {
             const response = await fetch('./title_mask.json');
             if (!response.ok) throw new Error('Не удалось загрузить маски');
             this.masks = await response.json();
-            console.log('[MaskManager] Маски загружены:', this.masks);
             this.loaded = true;
         } catch (e) {
-            console.warn('[MaskManager] Маски не загружены, применяется стандартное отображение:', e);
             this.masks = { masks: {} };
             this.loaded = true;
         }
@@ -28,13 +26,9 @@ export default class MaskManager {
         for (const mask of fieldMasks) {
             try {
                 const regex = new RegExp(mask.pattern);
-                const before = result;
                 result = result.replace(regex, mask.replacement);
-                if (before !== result) {
-                    console.log(`[MaskManager] ${field}: "${before}" → "${result}" (паттерн: ${mask.pattern})`);
-                }
             } catch (e) {
-                console.warn(`[MaskManager] Ошибка применения маски для поля ${field}:`, mask, e);
+                // Игнорируем ошибки масок
             }
         }
         return result;
